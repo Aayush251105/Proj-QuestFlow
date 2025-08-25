@@ -62,9 +62,10 @@ export default async function createQuestionCollection() {
 
   // create Index
   // if this dosent work create it using gui on appwrite
+  // didnt work when i created so commenting it down
 
-  await Promise.all([
-    databases.createIndex(db, questionCollection, "title", IndexType.Fulltext,["title"],["asc"]),
-    databases.createIndex(db, questionCollection, "content", IndexType.Fulltext,["content"],["asc"]),
-  ]);
+  // await Promise.all([
+  //   databases.createIndex(db, questionCollection, "title", IndexType.Fulltext,["title"],["asc"]),
+  //   databases.createIndex(db, questionCollection, "content", IndexType.Fulltext,["content"],["asc"]),
+  // ]);
 }
