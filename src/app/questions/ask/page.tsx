@@ -1,9 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { databases } from "@/models/server/config";
-import { db, questionCollection } from "@/models/name";
-import { ID, Permission, Role } from "node-appwrite";
 import { useAuthStore } from "@/store/Auth";
 import { useRouter } from "next/navigation";
 
@@ -17,34 +14,34 @@ export default function AskQuestionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!session) {
       alert("You must be logged in to ask a question.");
       return;
     }
 
     try {
-      await databases.createDocument(
-        db,
-        questionCollection,
-        ID.unique(),
-        {
+      const res = await fetch("/api/questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           title,
           content,
-          tags: tags.split(",").map(tag => tag.trim()),
+          tags: tags.split(",").map(t => t.trim()),
           authorId: session.userId,
-        },
-        [
-          Permission.read(Role.any()),                  // Anyone can read
-          Permission.update(Role.user(session.userId)), // Only owner can update
-          Permission.delete(Role.user(session.userId)), // Only owner can delete
-          Permission.write(Role.user(session.userId)),  // Only owner can write
-        ]
-      );
+        }),
+      });
 
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to submit question");
+      }
+
+      alert("Question submitted successfully!");
       router.push("/questions");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to submit question.");
+    } catch (error: any) {
+      console.error("Error:", error);
+      alert(error.message);
     }
   };
 
@@ -56,14 +53,14 @@ export default function AskQuestionPage() {
           type="text"
           placeholder="Question title"
           value={title}
-          onChange={e => setTitle(e.target.value)}
+          onChange={(e) => setTitle(e.target.value)}
           className="w-full border p-2 rounded"
           required
         />
         <textarea
           placeholder="Describe your question..."
           value={content}
-          onChange={e => setContent(e.target.value)}
+          onChange={(e) => setContent(e.target.value)}
           className="w-full border p-2 rounded"
           required
         />
@@ -71,7 +68,7 @@ export default function AskQuestionPage() {
           type="text"
           placeholder="Tags (comma separated)"
           value={tags}
-          onChange={e => setTags(e.target.value)}
+          onChange={(e) => setTags(e.target.value)}
           className="w-full border p-2 rounded"
         />
         <button

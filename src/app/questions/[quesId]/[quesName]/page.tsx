@@ -26,31 +26,38 @@ import DeleteQuestion from "./DeleteQuestion";
 import EditQuestion from "./EditQuestion";
 import { TracingBeam } from "@/components/ui/tracing-beam";
 
-const Page = async ({ params }: { params: { quesId: string; quesName: string } }) => {
-    const [question, answers, upvotes, downvotes, comments] = await Promise.all([
-        databases.getDocument(db, questionCollection, params.quesId),
-        databases.listDocuments(db, answerCollection, [
-            Query.orderDesc("$createdAt"),
-            Query.equal("questionId", params.quesId),
-        ]),
-        databases.listDocuments(db, voteCollection, [
-            Query.equal("typeId", params.quesId),
-            Query.equal("type", "question"),
-            Query.equal("voteStatus", "upvoted"),
-            Query.limit(1), // for optimization
-        ]),
-        databases.listDocuments(db, voteCollection, [
-            Query.equal("typeId", params.quesId),
-            Query.equal("type", "question"),
-            Query.equal("voteStatus", "downvoted"),
-            Query.limit(1), // for optimization
-        ]),
-        databases.listDocuments(db, commentCollection, [
-            Query.equal("type", "question"),
-            Query.equal("typeId", params.quesId),
-            Query.orderDesc("$createdAt"),
-        ]),
-    ]);
+const Page = async ({
+  params,
+}: {
+  params: { quesId: string; quesName: string }
+}) => {
+  const { quesId, quesName } = params;
+
+  const [question, answers, upvotes, downvotes, comments] = await Promise.all([
+    databases.getDocument(db, questionCollection, quesId),
+    databases.listDocuments(db, answerCollection, [
+      Query.orderDesc("$createdAt"),
+      Query.equal("questionId", quesId),
+    ]),
+    databases.listDocuments(db, voteCollection, [
+      Query.equal("typeId", quesId),
+      Query.equal("type", "question"),
+      Query.equal("voteStatus", "upvoted"),
+      Query.limit(1),
+    ]),
+    databases.listDocuments(db, voteCollection, [
+      Query.equal("typeId", quesId),
+      Query.equal("type", "question"),
+      Query.equal("voteStatus", "downvoted"),
+      Query.limit(1),
+    ]),
+    databases.listDocuments(db, commentCollection, [
+      Query.equal("type", "question"),
+      Query.equal("typeId", quesId),
+      Query.orderDesc("$createdAt"),
+    ]),
+  ]);
+
 
     // since it is dependent on the question, we fetch it here outside of the Promise.all
     const author = await users.get<UserPrefs>(question.authorId);
@@ -168,18 +175,22 @@ const Page = async ({ params }: { params: { quesId: string; quesName: string } }
                     </div>
                     <div className="w-full overflow-auto">
                         <MarkdownPreview className="rounded-xl p-4" source={question.content} />
-                        <picture>
-                            <img
-                                src={
-                                    storage.getFilePreview(
-                                        questionAttatchmentBucket,
-                                        question.attachmentId
-                                    )
-                                }
+                        {question.attachmentId ? (
+                            <picture>
+                                <img
+                                src={storage
+                                    .getFilePreview(questionAttatchmentBucket, question.attachmentId)
+                                    .toString()}
                                 alt={question.title}
-                                className="mt-3 rounded-lg"
-                            />
-                        </picture>
+                                className="mt-3 rounded-lg shadow"
+                                />
+                            </picture>
+                            ) : (
+                            <p className="mt-3 text-sm italic text-gray-400">
+                                No attachment available.
+                            </p>
+                            )}
+
                         <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
                             {question.tags.map((tag: string) => (
                                 <Link
